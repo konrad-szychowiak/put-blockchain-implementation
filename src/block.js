@@ -42,14 +42,15 @@ export class Block {
     /**
      *
      * @param difficulty {number}
-     * @returns {Block}
+     * @returns {Promise<Block>}
      */
-    mine(difficulty) {
-        while (this.hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")) {
-            this.nonce++;
-            this.setHash()
-        }
-
-        return this;
+    async mine(difficulty) {
+        return new Promise( resolve => {
+            while (this.hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")) {
+                this.nonce++;
+                this.setHash()
+            }
+            resolve(this)
+        })
     }
 }

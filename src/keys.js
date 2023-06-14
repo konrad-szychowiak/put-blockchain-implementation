@@ -1,5 +1,9 @@
 import pkg from 'elliptic';
-const {ec} = pkg;
+const {ec: EC} = pkg;
 
-const curve = new ec('secp256k1')
-export const Key = () => curve.genKeyPair();
+export const ec = new EC('secp256k1')
+/**
+ * @returns {EC.KeyPair}
+ * @constructor
+ */
+export const Key = () => ec.genKeyPair();

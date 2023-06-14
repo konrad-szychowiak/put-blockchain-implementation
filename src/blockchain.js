@@ -1,8 +1,6 @@
 import {Block} from "./block.js";
-import {bytesToHex as toHex} from "@noble/hashes/utils";
-import {sha256} from "@noble/hashes/sha256";
 import {Transaction} from "./transaction.js";
-import {Users} from "./db.js";
+import {Users} from "./users.js";
 
 export class Blockchain {
 
@@ -12,27 +10,33 @@ export class Blockchain {
      */
     chain = []
 
+    /** @type {Transaction[]} */ pendingTransactions = [];
+
     constructor() {
-        this.pendingTransactions = []
         this.miningReward = 100;
-        this.createGenesisBlock()
-        console.log(`Blockchain set up with genesis block #${this.getLatestBlock().hash}`)
     }
 
-    createGenesisBlock() {
+    toDTO() {
+        return this.chain.map(block => ({
+            ...block, data: block.data.map(tr => tr.toDTO())
+        }))
+    }
+
+    async createGenesisBlock() {
         const initialReward = new Transaction(null, Users.getOneByName('miner'), this.miningReward)
-        const genesis = new Block(null, [initialReward], new Date("2.2.2022"))
+        const genesis = await new Block(null, [initialReward], new Date("2.2.2022"))
             .mine(this.difficulty)
         this.chain = [genesis]
+        console.log(`Blockchain set up with genesis block #${this.getLatestBlock().hash}`)
     }
 
     getLatestBlock() {
         return this.chain[this.chain.length - 1]
     }
 
-    minePendingTransactions(rewardAddress) {
+    async minePendingTransactions(rewardAddress) {
         const block = new Block(this.getLatestBlock().hash, this.pendingTransactions)
-        block.mine(this.difficulty)
+        await block.mine(this.difficulty)
         console.log(`Mined block #${block.hash}`)
         this.chain.push(block);
 
@@ -56,9 +60,5 @@ export class Blockchain {
                 return block.isHashValid() && block.previousHash === this.chain[id].hash
             })
             .reduce((foo, bar) => foo && bar, true)
-    }
-
-    calculateHash() {
-        return toHex(sha256(this.chain.map(block => block.calculateHash()).join('')))
     }
 }

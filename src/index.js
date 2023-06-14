@@ -4,7 +4,7 @@ import {Blockchain} from "./blockchain.js";
 import express from "express";
 import {Wallet} from "./wallet.js";
 import {Transaction} from "./transaction.js";
-import {Users} from "./db.js";
+import {Users} from "./users.js";
 import cors from 'cors';
 
 // const miner = users.miner;
@@ -36,25 +36,28 @@ app.use(cors())
 
 app.get('/blockchain', (req, res) => {
     console.log('Getting blockchain...')
-    res.send(bc.chain)
+    res.send(bc.toDTO())
 })
 
 app.get('/blockchain/pending', (req, res) => {
     console.log('Getting pending transactions...')
-    res.send(bc.pendingTransactions)
+    return res.send(bc.pendingTransactions.map(transaction => transaction.toDTO()))
 })
 
-app.post('/blockchain/mine', (req, res) => {
+app.post('/blockchain/mine', async (req, res) => {
     console.log('Mining block with pending transactions...')
     const {awardee, password} = req.body;
     const rewardWallet = Users.getOneByName(awardee);
     if (!rewardWallet || !rewardWallet.validateCredentials(password)) return res.status(404).send('Not found')
 
     const before = performance.now();
-    bc.minePendingTransactions(rewardWallet);
+    await bc.minePendingTransactions(rewardWallet);
     const after = performance.now();
 
-    res.send(bc.pendingTransactions)
+    const time = after-before
+    console.log(time, 'taken to mine new block')
+
+    return res.send({ time })
 })
 
 app.get('/user', (req, res) => {
@@ -85,9 +88,12 @@ app.post('/transaction', (req, res) => {
     const transaction = new Transaction(sendWallet, receiveWallet, amount)
     bc.addTransaction(transaction)
 
-    return res.send(bc.pendingTransactions)
+    return res.send(bc.pendingTransactions.map(transaction => transaction.toDTO()))
 })
 
-app.listen(8080, () => {
+app.listen(8080, async () => {
+    await bc.createGenesisBlock();
+    console.log(JSON.stringify(bc.toDTO()))
+    console.log(Users.getOneByName('miner').amountInBlockchain(bc))
     console.log(`listening on http://localhost:8080/`)
 })

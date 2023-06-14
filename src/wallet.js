@@ -17,15 +17,21 @@ export class Wallet {
     }
 
     amountInBlockchain(blockchain) {
-        return blockchain.chain
-            .flatMap(block => block.data)
+        return [...blockchain.toDTO().flatMap(block => block.data), ...blockchain.pendingTransactions]
             .map(transaction => {
+                // console.log(this.public, transaction)
+
                 if (transaction.receiver === this.public)
                     return transaction.amount;
+
                 if (/*transaction.sender && */transaction.sender === this.public)
                     return -transaction.amount;
+
                 return 0;
             })
+            // .map(el => {
+            //     console.log(el); return el;
+            // })
             .reduce((a, b) => a + b, 0)
     }
 }

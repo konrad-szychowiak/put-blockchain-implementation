@@ -5,93 +5,214 @@
   <title>Blockchain</title>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" rel="stylesheet">
 </head>
 <body x-init="">
 
-<h1>Transaction</h1>
-<form @submit="async (e) => {e.preventDefault(); await sendTransaction(username, receiver, amount, password)}"
-      x-data="{ username: '', password: '', receiver: '', amount: 0 }">
-  <span>Sender</span>
-  <select @input="e => {username = (e.target.value)}" id="transaction__username"
-          name="username"
-  >
-    <option value="" x-show="username === ''">select username of the sender</option>
-    <template x-for="user in $store.users">
-      <option :value="user" x-text="user"></option>
-    </template>
-  </select>
+<section class="hero is-primary">
+  <div class="hero-body">
+    <p class="title">
+      Blockchain
+    </p>
+    <p class="subtitle">
+      Konrad Szychowiak, Barbara Krajewska
+    </p>
+  </div>
+</section>
 
-  <span>Password</span>
-  <input :value="password" @input="e => {password = (e.target.value)}" type="password"/>
+<main class="section">
 
-  <span>Receiver</span>
-  <select :disabled="username === ''" @input="e => {receiver = (e.target.value)}" id="" name="">
-    <option value="" x-show="receiver === ''">select receiver</option>
+  <div class="columns">
+    <div class="column is-one-fifth">
 
-    <template x-for="user in $store.users.filter(el => el !== username)">
-      <option :value="user" x-text="user"></option>
-    </template>
-  </select>
+      <article class="panel is-primary">
+        <p class="panel-heading">
+          Transaction
+        </p>
 
-  <span>Amount</span>
-  <input :value="amount" @input="e => {amount= parseInt(e.target.value)}" type="number"/>
+        <div class="panel-block">
+          <form @submit="async (e) => {e.preventDefault(); await sendTransaction(username, receiver, amount, password)}"
+                x-data="{ username: '', password: '', receiver: '', amount: 0 }">
 
-  <button type="submit">Send transaction</button>
-</form>
+            <div class="field">
+              <label class="label">Sender</label>
+              <div class="control">
+                <div class="select">
+                  <select @input="e => {username = (e.target.value)}" name="username">
+                    <option value="" x-show="username === ''">select sender</option>
+                    <template x-for="user in $store.users">
+                      <option :value="user" x-text="user"></option>
+                    </template>
+                  </select>
+                </div>
+              </div>
+            </div>
 
-<h2>Pending Transactions</h2>
-<ol>
-  <template x-for="transaction in $store.transactions" x-show="$store.transactions.length > 0">
-    <li>
-      <b x-text="transaction.sender.substring(0, 10) + '...'"></b>
-      sent
-      <b x-text="transaction.amount"></b>
-      coin(s) to
-      <b x-text="transaction.receiver.substring(0, 10) + '...'"></b>
-    </li>
-  </template>
-</ol>
+            <div class="field">
+              <label class="label">Password</label>
+              <div class="control">
+                <input :value="password" @input="e => {password = (e.target.value)}" class="input" type="password"/>
+              </div>
+            </div>
 
-<h1>Mining</h1>
-<form @submit="mine(awardee, password)" x-data="{ awardee: '', password: '' }">
+            <div class="field">
+              <label class="label">Receiver</label>
+              <div class="control">
+                <div class="select">
+                  <select :disabled="username === ''" @input="e => {receiver = (e.target.value)}">
+                    <option value="" x-show="receiver === ''">select receiver</option>
 
-  <span>Who should receive the award?</span>
-  <select @input="e => {awardee = (e.target.value)}" id="mining__awardee">
-    <option value="" x-show="awardee === ''">select username of the awardee</option>
-    <template x-for="user in $store.users">
-      <option :value="user" x-text="user"></option>
-    </template>
-  </select>
+                    <template x-for="user in $store.users.filter(el => el !== username)">
+                      <option :value="user" x-text="user"></option>
+                    </template>
+                  </select>
+                </div>
+              </div>
+            </div>
 
-  <span>Password</span>
-  <input :value="password" @input="e => {password = (e.target.value)}" type="password"/>
 
-  <button type="submit">Mine block</button>
-</form>
+            <div class="field">
+              <label class="label">Amount</label>
+              <div class="control">
+                <input :value="amount" @input="e => {amount= parseInt(e.target.value)}" class="input" type="number"/>
+              </div>
+            </div>
 
-<h1>Blockchain</h1>
-<ol>
-  <template x-for="block in $store.bc">
-    <li>
-      Block <code x-text="'#'+block.hash"></code>
-      (after <code x-text="'#'+block.previousHash"></code>)
-      mined at <code x-text="new Date(block.timestamp).toLocaleString()"></code>
-      includes:
-      <ul>
-        <template x-for="transaction in block.data">
-          <li>
-            <b x-text="transaction.sender.substring(0, 10) + '...'"></b>
+            <button class="button is-primary" type="submit">Send transaction</button>
+          </form>
+        </div>
+      </article>
+
+
+    </div>
+
+    <div class="column is-three-fifths">
+      <article class="panel is-warning">
+        <p class="panel-heading">
+          Pending Transactions
+        </p>
+
+        <template x-for="transaction in $store.transactions" x-show="$store.transactions.length > 0">
+          <div class="panel-block">
+            <span>
+
+            <template x-if="transaction.sender">
+                        <span class="tag is-light is-rounded"
+                              x-text="`${transaction.sender.substring(0, 10)}...`"></span>
+            </template>
             sent
-            <b x-text="transaction.amount"></b>
-            coin(s) to
-            <b x-text="transaction.receiver.substring(0, 10) + '...'"></b>
-          </li>
+            <span class="tag is-light is-rounded" x-text="`${transaction.amount} coins`"></span>
+            to
+            <span class="tag is-light is-rounded"
+                  x-text="transaction.receiver.substring(0, 10) + '...'"></span>
+              signed
+              <span class="tag is-warning is-rounded is-light"
+                    x-text="transaction.fingerprint.substring(0, 25) + '...' + transaction.fingerprint.slice(-25)"></span>
+            </span>
+          </div>
         </template>
-      </ul>
-    </li>
-  </template>
-</ol>
+      </article>
 
+      <article class="panel is-primary">
+        <p class="panel-heading">
+          Blockchain
+        </p>
+
+        <template x-for="block in $store.bc">
+          <div class="panel-block">
+            <div class="box" style="min-width: 100%">
+              <table class="table is-fullwidth">
+                <tr>
+                  <td><strong>Block</strong></td>
+                  <td>
+                    <span class="tag is-primary is-light is-rounded" x-show="!block.previousHash">Genesis...</span>
+                    <span class="tag is-light is-rounded" x-text="block.hash"></span>
+                  </td>
+                </tr>
+                <template x-if="block.previousHash">
+                  <tr>
+                    <td>previous block</td>
+                    <td><span class="tag is-primary is-light is-rounded" x-text="block.previousHash"></span></td>
+                  </tr>
+                </template>
+                <tr>
+                  <td>mined at</td>
+                  <td><span class="tag is-light is-rounded" x-text="new Date(block.timestamp).toLocaleString()"></span>
+                  </td>
+                </tr>
+                <template x-for="transaction in block.data">
+                  <tr>
+                    <td><i>transaction</i></td>
+                    <td>
+                      <template x-if="transaction.sender">
+                        <span class="tag is-light is-rounded"
+                              x-text="`${transaction.sender.substring(0, 10)}...`"></span>
+                      </template>
+                      sent
+                      <span class="tag is-light is-rounded" x-text="`${transaction.amount} coins`"></span>
+                      to
+                      <span class="tag is-light is-rounded"
+                            x-text="transaction.receiver.substring(0, 10) + '...'"></span>
+                      <template x-if="transaction.fingerprint">
+                        <span>
+                        signed <span class="tag is-primary is-rounded is-light"
+                              x-text="transaction.fingerprint.substring(0, 25) + '...' + transaction.fingerprint.slice(-25)"></span>
+                        </span>
+                      </template>
+                    </td>
+                  </tr>
+                </template>
+              </table>
+            </div>
+          </div>
+        </template>
+
+
+      </article>
+    </div>
+
+    <div class="column">
+      <article class="panel is-primary">
+        <p class="panel-heading">
+          Mining
+        </p>
+
+        <div class="panel-block">
+          <form @submit="mine(awardee, password)" x-data="{ awardee: '', password: '' }">
+
+
+            <div class="field">
+              <label class="label">Who should receive the award?</label>
+              <div class="control">
+                <div class="select">
+                  <select @input="e => {awardee = (e.target.value)}" id="mining__awardee">
+                    <option value="" x-show="awardee === ''">select username of the awardee</option>
+                    <template x-for="user in $store.users">
+                      <option :value="user" x-text="user"></option>
+                    </template>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label">Password</label>
+              <div class="control">
+                <input :value="password" @input="e => {password = (e.target.value)}" class="input" type="password"/>
+              </div>
+            </div>
+
+            <button class="button is-primary" type="submit">Mine block</button>
+            <button @click="updateBlockchain(); updatePending()" class="button is-primary is-outlined" type="button">
+              Update blockchain
+            </button>
+          </form>
+        </div>
+      </article>
+    </div>
+
+  </div>
+</main>
 
 <script>
 
@@ -116,7 +237,6 @@
             event.preventDefault();
 
             const res = await api.post('/blockchain/mine', {awardee, password})
-            console.log(res.data)
             await updateBlockchain()
             await updatePending()
         }
@@ -124,7 +244,6 @@
 
     async function updatePending() {
         const res = await api.get('/blockchain/pending')
-        console.log(res.data)
         Alpine.store('transactions', res.data)
     }
 
@@ -143,13 +262,6 @@
     api.get('/user')
         .then(({data}) => {
             Alpine.store('users', data)
-        })
-        .catch(e => {
-            console.error(e)
-        })
-    api.get('/blockchain/pending')
-        .then(({data}) => {
-            Alpine.store('transactions', data)
         })
         .catch(e => {
             console.error(e)
