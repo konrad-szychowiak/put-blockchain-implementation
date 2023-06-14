@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Blockchain</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body x-init="">
+
+<h1>Transaction</h1>
+<form @submit="async (e) => {e.preventDefault(); await sendTransaction(username, receiver, amount, password)}"
+      x-data="{ username: '', password: '', receiver: '', amount: 0 }">
+  <span>Sender</span>
+  <select @input="e => {username = (e.target.value)}" id="transaction__username"
+          name="username"
+  >
+    <option value="" x-show="username === ''">select username of the sender</option>
+    <template x-for="user in $store.users">
+      <option :value="user" x-text="user"></option>
+    </template>
+  </select>
+
+  <span>Password</span>
+  <input :value="password" @input="e => {password = (e.target.value)}" type="password"/>
+
+  <span>Receiver</span>
+  <select :disabled="username === ''" @input="e => {receiver = (e.target.value)}" id="" name="">
+    <option value="" x-show="receiver === ''">select receiver</option>
+
+    <template x-for="user in $store.users.filter(el => el !== username)">
+      <option :value="user" x-text="user"></option>
+    </template>
+  </select>
+
+  <span>Amount</span>
+  <input :value="amount" @input="e => {amount= parseInt(e.target.value)}" type="number"/>
+
+  <button type="submit">Send transaction</button>
+</form>
+
+<h2>Pending Transactions</h2>
+<ol>
+  <template x-for="transaction in $store.transactions" x-show="$store.transactions.length > 0">
+    <li>
+      <b x-text="transaction.sender.substring(0, 10) + '...'"></b>
+      sent
+      <b x-text="transaction.amount"></b>
+      coin(s) to
+      <b x-text="transaction.receiver.substring(0, 10) + '...'"></b>
+    </li>
+  </template>
+</ol>
+
+<h1>Mining</h1>
+<form @submit="mine(awardee, password)" x-data="{ awardee: '', password: '' }">
+
+  <span>Who should receive the award?</span>
+  <select @input="e => {awardee = (e.target.value)}" id="mining__awardee">
+    <option value="" x-show="awardee === ''">select username of the awardee</option>
+    <template x-for="user in $store.users">
+      <option :value="user" x-text="user"></option>
+    </template>
+  </select>
+
+  <span>Password</span>
+  <input :value="password" @input="e => {password = (e.target.value)}" type="password"/>
+
+  <button type="submit">Mine block</button>
+</form>
+
+<h1>Blockchain</h1>
+<ol>
+  <template x-for="block in $store.bc">
+    <li>
+      Block <code x-text="'#'+block.hash"></code>
+      (after <code x-text="'#'+block.previousHash"></code>)
+      mined at <code x-text="new Date(block.timestamp).toLocaleString()"></code>
+      includes:
+      <ul>
+        <template x-for="transaction in block.data">
+          <li>
+            <b x-text="transaction.sender.substring(0, 10) + '...'"></b>
+            sent
+            <b x-text="transaction.amount"></b>
+            coin(s) to
+            <b x-text="transaction.receiver.substring(0, 10) + '...'"></b>
+          </li>
+        </template>
+      </ul>
+    </li>
+  </template>
+</ol>
+
+
+<script>
+
+    const api = axios.create({
+        baseURL: 'http://localhost:8080',
+        timeout: 1000,
+        // headers: {'X-Custom-Header': 'foobar'}
+    });
+
+    async function sendTransaction(sender, receiver, amount, password) {
+        try {
+            const res = await api.post('/transaction', {sender, receiver, amount, password})
+            console.log(res.data)
+            Alpine.store('transactions', res.data)
+        } catch (e) {
+            alert(e.response.data)
+        }
+    }
+
+    function mine(awardee, password) {
+        return async (event) => {
+            event.preventDefault();
+
+            const res = await api.post('/blockchain/mine', {awardee, password})
+            console.log(res.data)
+            await updateBlockchain()
+            await updatePending()
+        }
+    }
+
+    async function updatePending() {
+        const res = await api.get('/blockchain/pending')
+        console.log(res.data)
+        Alpine.store('transactions', res.data)
+    }
+
+    async function updateBlockchain() {
+        const res = await api.get(`/blockchain`)
+        Alpine.store('bc', res.data)
+    }
+
+    document.addEventListener('alpine:init', async () => {
+        Alpine.store('bc', [])
+        Alpine.store('users', [])
+        Alpine.store('transactions', [])
+        await updateBlockchain()
+    })
+
+    api.get('/user')
+        .then(({data}) => {
+            Alpine.store('users', data)
+        })
+        .catch(e => {
+            console.error(e)
+        })
+    api.get('/blockchain/pending')
+        .then(({data}) => {
+            Alpine.store('transactions', data)
+        })
+        .catch(e => {
+            console.error(e)
+        })
+</script>
+</body>
+</html>
